@@ -104,6 +104,7 @@ export default function CaptionsPage() {
         padding: 0,
         fontFamily: "Arial, sans-serif",
         overflow: "hidden",
+        backgroundColor: "transparent",
       }}
     >
       {/* Container principal des sous-titres */}
@@ -123,10 +124,10 @@ export default function CaptionsPage() {
         {/* Fond translucide */}
         <div
           style={{
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            backgroundColor: "rgba(0, 0, 0, 0.9)",
             borderRadius: "12px",
             padding: "20px 30px",
-            backdropFilter: "blur(10px)",
+            //backdropFilter: "blur(10px)",
             border: "1px solid rgba(255, 255, 255, 0.1)",
             boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
             position: "relative",
