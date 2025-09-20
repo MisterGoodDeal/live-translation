@@ -8,7 +8,7 @@ Système de traduction en temps réel utilisant Whisper, avec interface web Reac
 
 ```bash
 # Cloner le projet
-git clone <votre-repo>
+git clone https://github.com/MisterGoodDeal/live-translation-webserver.git
 cd live-translation-webserver
 
 # Installation automatique complète
