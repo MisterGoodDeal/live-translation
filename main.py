@@ -477,7 +477,7 @@ if __name__ == "__main__":
     print("🚀 Lancement du front Next.js...")
 
     if platform.system() == "Windows":
-        npm_cmd = "npm.cmd run start"
+        npm_cmd = "npm.cmd run dev"
         next_process = subprocess.Popen(
             npm_cmd,
             cwd=FRONT_DIR,
@@ -485,7 +485,7 @@ if __name__ == "__main__":
         )
     else:
         next_process = subprocess.Popen(
-            ["npm", "run", "start"],
+            ["npm", "run", "dev"],
             cwd=FRONT_DIR,
             preexec_fn=os.setsid
         )

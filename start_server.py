@@ -11,7 +11,6 @@ import subprocess
 import sys
 import os
 import time
-import webbrowser
 import platform
 import signal
 from pathlib import Path
@@ -109,10 +108,6 @@ def main():
 
     # Démarrage backend + frontend
     backend_proc = start_backend()
-    # Petit délai pour laisser Next.js démarrer avant d'ouvrir le navigateur
-    time.sleep(5)
-    webbrowser.open(f"http://localhost:{FRONTEND_PORT}")
-    webbrowser.open(f"http://localhost:{FRONTEND_PORT}/captions")
 
     try:
         # Attendre que le backend se termine
