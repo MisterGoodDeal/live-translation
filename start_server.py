@@ -80,9 +80,6 @@ def main():
     if not check_python_env():
         return False
     
-    if not check_build_exists():
-        return False
-    
     # Afficher les URLs
     print("\n" + "=" * 50)
     print(f"📱 Interface principale: http://localhost:{FRONTEND_PORT}")
