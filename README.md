@@ -1,107 +1,107 @@
 # 🎙️ Live Translation WebServer
 
-Système de traduction en temps réel utilisant Whisper, avec interface web React et support GPU automatique.
+Real-time translation system using Whisper, with React web interface and automatic GPU support.
 
-## 📦 Prérequis
+## 📦 Prerequisites
 
 - Python 3.8+
 - Node.js 16+
 - Microphone
-- (Optionnel) GPU NVIDIA ou Apple Silicon
+- (Optional) NVIDIA GPU or Apple Silicon
 
-## 🚀 Installation Rapide
+## 🚀 Quick Installation
 
-### Option 1: Installation Automatique (Recommandée)
+### Option 1: Automatic Installation (Recommended)
 
 ```bash
-# Cloner le projet
+# Clone the project
 git clone https://github.com/MisterGoodDeal/live-translation-webserver.git
 cd live-translation-webserver
 
-# Installation complète en une commande
+# Complete installation in one command
 python run_all.py
 ```
 
-### Option 2: Installation Étape par Étape
+### Option 2: Step-by-Step Installation
 
 ```bash
-# 1. Installer les dépendances Python
+# 1. Install Python dependencies
 python install_python.py
 
-# 2. Build le projet Next.js
+# 2. Build the Next.js project
 python build_nextjs.py
 
-# 3. Démarrer le serveur
+# 3. Start the server
 python start_server.py
 ```
 
-### Option 3: Installation Manuelle
+### Option 3: Manual Installation
 
 ```bash
-# Créer un environnement virtuel
+# Create a virtual environment
 python -m venv .venv
 source .venv/bin/activate  # Mac/Linux
-# ou
+# or
 .venv\Scripts\activate     # Windows
 
-# Installer les dépendances
+# Install dependencies
 pip install -r requirements.txt
 
-# Configurer le support GPU (optionnel)
+# Configure GPU support (optional)
 python install_gpu.py
 ```
 
-## 🎮 Support GPU Automatique
+## 🎮 Automatic GPU Support
 
-Le script `install_gpu.py` détecte automatiquement votre machine et installe la bonne version de PyTorch :
+The `install_gpu.py` script automatically detects your machine and installs the correct PyTorch version:
 
 - **🍎 Mac M1/M2/M3** : Metal Performance Shaders (MPS)
 - **🎮 NVIDIA GPU** : CUDA 11.8
-- **💻 CPU** : Version CPU optimisée
+- **💻 CPU** : Optimized CPU version
 
-## 🏃‍♂️ Utilisation
+## 🏃‍♂️ Usage
 
-### Utilisation Quotidienne (Recommandée)
+### Daily Usage (Recommended)
 
 ```bash
-# Démarrer l'application complète
+# Start the complete application
 python start_server.py
 ```
 
-Cette commande :
+This command:
 
-- ✅ Vérifie que le build Next.js existe
-- ✅ Lance le serveur frontend sur le port 3000
-- ✅ Lance le serveur backend sur le port 8000
-- ✅ Ouvre automatiquement le navigateur
+- ✅ Verifies that the Next.js build exists
+- ✅ Launches the frontend server on port 3000
+- ✅ Launches the backend server on port 8000
+- ✅ Automatically opens the browser
 
-### URLs d'Accès
+### Access URLs
 
-- **Interface principale** : http://localhost:3000
-- **Interface sous-titres** : http://localhost:3000/captions
+- **Main Interface** : http://localhost:3000
+- **Captions Interface** : http://localhost:3000/captions
 - **Backend Socket.IO** : http://localhost:8000
 
-### Scripts Disponibles
+### Available Scripts
 
 | Script              | Description                                     |
 | ------------------- | ----------------------------------------------- |
-| `install_python.py` | Installe les dépendances Python + GPU           |
-| `build_nextjs.py`   | Build le projet Next.js en fichiers statiques   |
-| `start_server.py`   | Démarre le serveur complet (frontend + backend) |
-| `run_all.py`        | Exécute tous les scripts dans l'ordre           |
+| `install_python.py` | Installs Python dependencies + GPU              |
+| `build_nextjs.py`   | Builds the Next.js project into static files    |
+| `start_server.py`   | Starts the complete server (frontend + backend) |
+| `run_all.py`        | Runs all scripts in order                       |
 
 ## ⚙️ Configuration
 
-### Interface Web
+### Web Interface
 
-- **Microphone** : Sélectionnez votre microphone
-- **Modèle Whisper** : Choisissez entre small/medium/large
-- **GPU** : Activez l'accélération GPU
-- **Paramètres audio** : Fréquence, durée des chunks, seuil de volume
+- **Microphone** : Select your microphone
+- **Whisper Model** : Choose between small/medium/large
+- **GPU** : Enable GPU acceleration
+- **Audio Parameters** : Frequency, chunk duration, volume threshold
 
-### Fichier de configuration
+### Configuration File
 
-La configuration est sauvegardée dans `config.json` :
+The configuration is saved in `config.json`:
 
 ```json
 {
@@ -114,83 +114,76 @@ La configuration est sauvegardée dans `config.json` :
 }
 ```
 
-## 🔧 Fonctionnalités
+## 🔧 Features
 
-- ✅ **Transcription en temps réel** (français → anglais)
-- ✅ **Interface web moderne** (React + TypeScript)
-- ✅ **Support GPU automatique** (CUDA/Metal/CPU)
-- ✅ **Configuration persistante** (localStorage + config.json)
-- ✅ **Logs en temps réel**
-- ✅ **Sélection de microphone**
-- ✅ **Paramètres audio ajustables**
-- ✅ **Compatible OBS** (Browser Source)
-- ✅ **Scripts d'installation automatisés**
-- ✅ **Interface sous-titres dédiée**
+- ✅ **Real-time transcription** (French → English)
+- ✅ **Modern web interface** (React + TypeScript)
+- ✅ **Automatic GPU support** (CUDA/Metal/CPU)
+- ✅ **Persistent configuration** (localStorage + config.json)
+- ✅ **Real-time logs**
+- ✅ **Microphone selection**
+- ✅ **Adjustable audio parameters**
+- ✅ **OBS compatible** (Browser Source)
+- ✅ **Automated installation scripts**
+- ✅ **Dedicated captions interface**
 
-## 📋 Prérequis
+## 🐛 Troubleshooting
 
-- Python 3.8+
-- Node.js 16+
-- Microphone
-- (Optionnel) GPU NVIDIA ou Apple Silicon
-
-## 🐛 Dépannage
-
-### Problème de microphone
+### Microphone Issues
 
 ```bash
-# Lister les microphones disponibles
+# List available microphones
 python -c "import sounddevice as sd; print(sd.query_devices())"
 ```
 
-### Problème GPU
+### GPU Issues
 
 ```bash
-# Vérifier l'installation PyTorch
+# Check PyTorch installation
 python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}'); print(f'MPS: {torch.backends.mps.is_available() if hasattr(torch.backends, \"mps\") else False}')"
 ```
 
-### Réinstaller PyTorch GPU
+### Reinstall PyTorch GPU
 
 ```bash
 python install_gpu.py
 ```
 
-## 📁 Structure du Projet
+## 📁 Project Structure
 
 ```
 live-translation-webserver/
-├── main.py                    # Serveur Python principal
-├── install_python.py          # Installation dépendances Python
-├── build_nextjs.py            # Build projet Next.js
-├── start_server.py            # Démarrage serveur complet
-├── run_all.py                 # Script d'installation complète
-├── install_gpu.py             # Script d'installation GPU
-├── requirements.txt           # Dépendances Python
-├── config.json               # Configuration persistante
+├── main.py                    # Main Python server
+├── install_python.py          # Python dependencies installation
+├── build_nextjs.py            # Next.js project build
+├── start_server.py            # Complete server startup
+├── run_all.py                 # Complete installation script
+├── install_gpu.py             # GPU installation script
+├── requirements.txt           # Python dependencies
+├── config.json               # Persistent configuration
 └── live-translation-front/
     ├── pages/
-    │   ├── index.tsx         # Interface principale
+    │   ├── index.tsx         # Main interface
     │   └── captions/
-    │       └── index.tsx     # Interface sous-titres
+    │       └── index.tsx     # Captions interface
     ├── contexts/
     │   └── socket.contexts.tsx
-    └── out/                  # Build Next.js (généré)
+    └── out/                  # Next.js build (generated)
 ```
 
-## 🎯 Utilisation avec OBS
+## 🎯 Usage with OBS
 
-### Interface Principale
+### Main Interface
 
 1. URL: `http://localhost:3000`
-2. Paramétrez l'interface comme vous le souhaitez
-3. Activez la transcription depuis l'interface
+2. Configure the interface as desired
+3. Activate transcription from the interface
 
-### Interface Sous-titres (Recommandée)
+### Captions Interface (Recommended)
 
-1. Ajoutez une source "Browser Source"
+1. Add a "Browser Source"
 2. URL: `http://localhost:3000/captions`
-3. Mettre un CSS custom pour la source
+3. Add custom CSS for the source
 
 ```css
 :root {
@@ -198,13 +191,13 @@ live-translation-webserver/
 }
 ```
 
-4. Fond transparent activé
+4. Enable transparent background
 
 ## 📝 Notes
 
-- Le modèle Whisper est téléchargé automatiquement au premier lancement
-- Les modèles plus gros (medium/large) sont plus précis mais plus lents
-- L'activation GPU nécessite un redémarrage du serveur
-- La configuration est sauvegardée automatiquement (localStorage + config.json)
-- Compatible Mac, Windows et Linux
-- Les scripts gèrent automatiquement l'installation et le build
+- The Whisper model is automatically downloaded on first launch
+- Larger models (medium/large) are more accurate but slower
+- GPU activation requires a server restart
+- Configuration is automatically saved (localStorage + config.json)
+- Compatible with Mac, Windows and Linux
+- Scripts automatically handle installation and build
