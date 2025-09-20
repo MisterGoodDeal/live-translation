@@ -2,6 +2,13 @@
 
 Système de traduction en temps réel utilisant Whisper, avec interface web React et support GPU automatique.
 
+## 📦 Prérequis
+
+- Python 3.8+
+- Node.js 16+
+- Microphone
+- (Optionnel) GPU NVIDIA ou Apple Silicon
+
 ## 🚀 Installation Rapide
 
 ### Option 1: Installation Automatique (Recommandée)
@@ -11,11 +18,24 @@ Système de traduction en temps réel utilisant Whisper, avec interface web Reac
 git clone https://github.com/MisterGoodDeal/live-translation-webserver.git
 cd live-translation-webserver
 
-# Installation automatique complète
-python install.py
+# Installation complète en une commande
+python run_all.py
 ```
 
-### Option 2: Installation Manuelle
+### Option 2: Installation Étape par Étape
+
+```bash
+# 1. Installer les dépendances Python
+python install_python.py
+
+# 2. Build le projet Next.js
+python build_nextjs.py
+
+# 3. Démarrer le serveur
+python start_server.py
+```
+
+### Option 3: Installation Manuelle
 
 ```bash
 # Créer un environnement virtuel
@@ -41,24 +61,34 @@ Le script `install_gpu.py` détecte automatiquement votre machine et installe la
 
 ## 🏃‍♂️ Utilisation
 
-### 1. Démarrer le serveur
+### Utilisation Quotidienne (Recommandée)
 
 ```bash
-python main.py
+# Démarrer l'application complète
+python start_server.py
 ```
 
-### 2. Démarrer le frontend
+Cette commande :
 
-```bash
-cd live-translation-front
-npm install
-npm run dev
-```
+- ✅ Vérifie que le build Next.js existe
+- ✅ Lance le serveur frontend sur le port 3000
+- ✅ Lance le serveur backend sur le port 8000
+- ✅ Ouvre automatiquement le navigateur
 
-### 3. Ouvrir l'interface
+### URLs d'Accès
 
-- Frontend: http://localhost:3000
-- Backend: http://localhost:8000
+- **Interface principale** : http://localhost:3000
+- **Interface sous-titres** : http://localhost:3000/captions
+- **Backend Socket.IO** : http://localhost:8000
+
+### Scripts Disponibles
+
+| Script              | Description                                     |
+| ------------------- | ----------------------------------------------- |
+| `install_python.py` | Installe les dépendances Python + GPU           |
+| `build_nextjs.py`   | Build le projet Next.js en fichiers statiques   |
+| `start_server.py`   | Démarre le serveur complet (frontend + backend) |
+| `run_all.py`        | Exécute tous les scripts dans l'ordre           |
 
 ## ⚙️ Configuration
 
@@ -89,11 +119,13 @@ La configuration est sauvegardée dans `config.json` :
 - ✅ **Transcription en temps réel** (français → anglais)
 - ✅ **Interface web moderne** (React + TypeScript)
 - ✅ **Support GPU automatique** (CUDA/Metal/CPU)
-- ✅ **Configuration persistante**
+- ✅ **Configuration persistante** (localStorage + config.json)
 - ✅ **Logs en temps réel**
 - ✅ **Sélection de microphone**
 - ✅ **Paramètres audio ajustables**
 - ✅ **Compatible OBS** (Browser Source)
+- ✅ **Scripts d'installation automatisés**
+- ✅ **Interface sous-titres dédiée**
 
 ## 📋 Prérequis
 
@@ -128,29 +160,51 @@ python install_gpu.py
 
 ```
 live-translation-webserver/
-├── main.py                 # Serveur Python principal
-├── install.py             # Script d'installation automatique
-├── install_gpu.py         # Script d'installation GPU
-├── requirements.txt       # Dépendances Python
-├── config.json           # Configuration persistante
+├── main.py                    # Serveur Python principal
+├── install_python.py          # Installation dépendances Python
+├── build_nextjs.py            # Build projet Next.js
+├── start_server.py            # Démarrage serveur complet
+├── run_all.py                 # Script d'installation complète
+├── install_gpu.py             # Script d'installation GPU
+├── requirements.txt           # Dépendances Python
+├── config.json               # Configuration persistante
 └── live-translation-front/
     ├── pages/
-    │   └── index.tsx      # Interface principale
+    │   ├── index.tsx         # Interface principale
+    │   └── captions/
+    │       └── index.tsx     # Interface sous-titres
     ├── contexts/
     │   └── socket.contexts.tsx
-    └── ...
+    └── out/                  # Build Next.js (généré)
 ```
 
 ## 🎯 Utilisation avec OBS
 
+### Interface Principale
+
+1. URL: `http://localhost:3000`
+2. Paramétrez l'interface comme vous le souhaitez
+3. Activez la transcription depuis l'interface
+
+### Interface Sous-titres (Recommandée)
+
 1. Ajoutez une source "Browser Source"
-2. URL: `http://localhost:3000`
-3. Largeur: 1920, Hauteur: 1080
-4. Activez la transcription depuis l'interface
+2. URL: `http://localhost:3000/captions`
+3. Mettre un CSS custom pour la source
+
+```css
+:root {
+  background-color: transparent;
+}
+```
+
+4. Fond transparent activé
 
 ## 📝 Notes
 
 - Le modèle Whisper est téléchargé automatiquement au premier lancement
 - Les modèles plus gros (medium/large) sont plus précis mais plus lents
 - L'activation GPU nécessite un redémarrage du serveur
+- La configuration est sauvegardée automatiquement (localStorage + config.json)
 - Compatible Mac, Windows et Linux
+- Les scripts gèrent automatiquement l'installation et le build
