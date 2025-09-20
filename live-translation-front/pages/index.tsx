@@ -21,6 +21,7 @@ import {
   WaveSineIcon,
   StopIcon,
   PlayIcon,
+  FloppyDiskBackIcon,
 } from "@phosphor-icons/react";
 import { SpeakerLowIcon } from "@phosphor-icons/react/dist/ssr";
 
@@ -37,12 +38,8 @@ export default function IndexPage() {
   // Gestion des microphones
   const [microphones, setMicrophones] = useState<Microphone[]>([]);
   const [selectedMicrophone, setSelectedMicrophone] = useState<string>("");
-  useEffect(() => {
-    socket.emit("set_microphone", { id: +selectedMicrophone });
-  }, [selectedMicrophone]);
 
   // Gestion du modèle Whisper
-  const [modelWhisper, setModelWhisper] = useState<string>("small");
   const [selectedModelWhisper, setSelectedModelWhisper] =
     useState<string>("small");
   const whipserModels = [
@@ -70,7 +67,7 @@ export default function IndexPage() {
 
   // Gestion de la configuration
   const [config, setConfig] = useState({
-    model_name: modelWhisper,
+    model_name: selectedModelWhisper,
     sample_rate: 16000,
     chunk_duration: 2,
     volume_threshold: 0.01,
@@ -289,25 +286,39 @@ export default function IndexPage() {
               >
                 Utiliser l'accélération GPU pour les modèles Whisper
               </Checkbox>
-              <Select
-                size="sm"
-                isDisabled={!isConnected}
-                label="Liste des microphones"
-                isClearable={false}
-                placeholder="Sélectionner un microphone"
-                description={"Microphone utilisé pour la traduction en direct"}
-                selectedKeys={selectedMicrophone ? [selectedMicrophone] : []}
-                onSelectionChange={(keys) => {
-                  const key = Array.from(keys)[0] as string;
-                  setSelectedMicrophone(key || "");
-                }}
-              >
-                {microphones.map((microphone) => (
-                  <SelectItem key={microphone.id.toString()}>
-                    {`${microphone.name} (${microphone.channels} ${microphone.channels > 1 ? "canaux" : "canal"}, ${microphone.sample_rate}Hz)`}
-                  </SelectItem>
-                ))}
-              </Select>
+              <div className="flex flex-row gap-4 justify-between items-start">
+                <Select
+                  size="sm"
+                  isDisabled={!isConnected}
+                  label="Liste des microphones"
+                  isClearable={false}
+                  placeholder="Sélectionner un microphone"
+                  description={
+                    "Microphone utilisé pour la traduction en direct"
+                  }
+                  selectedKeys={selectedMicrophone ? [selectedMicrophone] : []}
+                  onSelectionChange={(keys) => {
+                    const key = Array.from(keys)[0] as string;
+                    setSelectedMicrophone(key || "");
+                  }}
+                >
+                  {microphones.map((microphone) => (
+                    <SelectItem key={microphone.id.toString()}>
+                      {`${microphone.name} (${microphone.channels} ${microphone.channels > 1 ? "canaux" : "canal"}, ${microphone.sample_rate}Hz)`}
+                    </SelectItem>
+                  ))}
+                </Select>
+                <Button
+                  isIconOnly
+                  aria-label="Save"
+                  color="primary"
+                  onPress={() =>
+                    socket.emit("set_microphone", { id: +selectedMicrophone })
+                  }
+                >
+                  <FloppyDiskBackIcon />
+                </Button>
+              </div>
               <Slider
                 isDisabled={!isConnected}
                 defaultValue={config.sample_rate}
