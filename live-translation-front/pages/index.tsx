@@ -312,9 +312,13 @@ export default function IndexPage() {
                   isIconOnly
                   aria-label="Save"
                   color="primary"
-                  onPress={() =>
-                    socket.emit("set_microphone", { id: +selectedMicrophone })
-                  }
+                  onPress={() => {
+                    socket.emit("set_microphone", { id: +selectedMicrophone });
+                    addToast({
+                      title: "Microphone mis à jour !",
+                      color: "success",
+                    });
+                  }}
                 >
                   <FloppyDiskBackIcon />
                 </Button>
