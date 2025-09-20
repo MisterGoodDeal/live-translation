@@ -1,18 +1,27 @@
 #!/usr/bin/env python3
 """
-Script de build du projet Next.js
+Script de build du projet Next.js compatible Windows et macOS/Linux
 """
 
 import subprocess
 import sys
 import os
 from pathlib import Path
+import platform
 
 def run_command(cmd, description, cwd=None):
     """Exécute une commande et affiche le résultat"""
     print(f"🔄 {description}...")
     try:
-        result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True, cwd=cwd)
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            check=True,
+            capture_output=True,
+            text=True,
+            cwd=cwd,
+            env=os.environ
+        )
         print(f"✅ {description} - Succès")
         return True
     except subprocess.CalledProcessError as e:
@@ -20,10 +29,17 @@ def run_command(cmd, description, cwd=None):
         print(e.stderr)
         return False
 
+def is_windows():
+    """Retourne True si le système est Windows"""
+    return platform.system().lower() == "windows"
+
 def check_node():
     """Vérifie que Node.js est installé"""
+    cmd = "node --version"
+    if is_windows():
+        cmd = "node --version"
     try:
-        result = subprocess.run(["node", "--version"], capture_output=True, text=True)
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, env=os.environ)
         version = result.stdout.strip()
         print(f"📦 Node.js {version} détecté")
         return True
@@ -33,8 +49,11 @@ def check_node():
 
 def check_npm():
     """Vérifie que npm est installé"""
+    cmd = "npm --version"
+    if is_windows():
+        cmd = "npm --version"
     try:
-        result = subprocess.run(["npm", "--version"], capture_output=True, text=True)
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, env=os.environ)
         version = result.stdout.strip()
         print(f"📦 npm {version} détecté")
         return True
@@ -61,7 +80,6 @@ def install_dependencies():
     """Installe les dépendances npm"""
     frontend_dir = "live-translation-front"
     
-    # Vérifier si node_modules existe
     if os.path.exists(f"{frontend_dir}/node_modules"):
         print("📁 node_modules existant trouvé")
         return True
@@ -72,7 +90,6 @@ def build_nextjs():
     """Build l'application Next.js"""
     frontend_dir = "live-translation-front"
     
-    # Vérifier que next.config.js existe
     config_file = Path(frontend_dir) / "next.config.js"
     if not config_file.exists():
         print("⚠️ next.config.js non trouvé - Création d'une configuration par défaut...")
@@ -86,20 +103,12 @@ def create_default_config():
 const nextConfig = {
   output: "export",
   trailingSlash: true,
-  images: {
-    unoptimized: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  images: { unoptimized: true },
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
 };
-
 module.exports = nextConfig;
 '''
-    
     config_path = Path("live-translation-front/next.config.js")
     with open(config_path, 'w') as f:
         f.write(config_content)
