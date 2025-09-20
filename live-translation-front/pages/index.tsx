@@ -35,11 +35,8 @@ export default function IndexPage() {
 
   const [translationStarted, setTranslationStarted] = useState(false);
 
-  // Gestion des microphones
   const [microphones, setMicrophones] = useState<Microphone[]>([]);
   const [selectedMicrophone, setSelectedMicrophone] = useState<string>("");
-
-  // Gestion du modèle Whisper
   const [selectedModelWhisper, setSelectedModelWhisper] =
     useState<string>("small");
   const whipserModels = [
@@ -65,7 +62,6 @@ export default function IndexPage() {
     });
   }, [selectedModelWhisper]);
 
-  // Gestion de la configuration
   const [config, setConfig] = useState({
     model_name: selectedModelWhisper,
     sample_rate: 16000,
@@ -75,7 +71,6 @@ export default function IndexPage() {
     use_gpu: false,
   });
 
-  // Fonction pour faire défiler vers le bas
   const scrollToBottom = () => {
     if (textareaLogsRef.current) {
       textareaLogsRef.current.scrollTop = textareaLogsRef.current.scrollHeight;
@@ -86,7 +81,6 @@ export default function IndexPage() {
     }
   };
 
-  // Scroll automatique quand de nouveaux logs arrivent
   useEffect(() => {
     scrollToBottom();
   }, [logs, translation]);
@@ -111,7 +105,6 @@ export default function IndexPage() {
       });
       setLogs((prev) => {
         const newLogs = [...prev, `[${timestamp}] ${data.message}`];
-        // Garder seulement les 100 derniers logs
         return newLogs.slice(-100);
       });
     });
@@ -161,7 +154,6 @@ export default function IndexPage() {
       console.log("Configuration reçue:", data);
       setConfig(data);
 
-      // Mettre à jour le microphone sélectionné si configuré
       if (data.selected_microphone_id !== null) {
         setSelectedMicrophone(data.selected_microphone_id.toString());
       }
