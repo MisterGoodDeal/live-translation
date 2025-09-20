@@ -86,35 +86,6 @@ def install_dependencies():
     
     return run_command("npm install", "Installation des dépendances npm", cwd=frontend_dir)
 
-def build_nextjs():
-    """Build l'application Next.js"""
-    frontend_dir = "live-translation-front"
-    
-    config_file = Path(frontend_dir) / "next.config.js"
-    if not config_file.exists():
-        print("⚠️ next.config.js non trouvé - Création d'une configuration par défaut...")
-        create_default_config()
-    
-    return run_command("npm run build", "Build de l'application Next.js", cwd=frontend_dir)
-
-def create_default_config():
-    """Crée une configuration Next.js par défaut"""
-    config_content = '''/** @type {import('next').NextConfig} */
-const nextConfig = {
-  output: "export",
-  trailingSlash: true,
-  images: { unoptimized: true },
-  eslint: { ignoreDuringBuilds: true },
-  typescript: { ignoreBuildErrors: true },
-};
-module.exports = nextConfig;
-'''
-    config_path = Path("live-translation-front/next.config.js")
-    with open(config_path, 'w') as f:
-        f.write(config_content)
-    
-    print("✅ Configuration Next.js créée")
-
 def verify_build():
     """Vérifie que le build a réussi"""
     out_dir = Path("live-translation-front/out")
@@ -149,17 +120,7 @@ def main():
     if not install_dependencies():
         return False
     
-    # Build de l'application
-    if not build_nextjs():
-        return False
-    
-    # Vérification du build
-    if not verify_build():
-        return False
-    
-    print("\n🎉 Build terminé avec succès!")
-    print("📁 Fichiers générés dans: live-translation-front/out/")
-    print("📋 Prochaine étape: python start_server.py")
+    print("\n🎉 Installation terminée avec succès!")
     
     return True
 
