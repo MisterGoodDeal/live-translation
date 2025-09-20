@@ -9,11 +9,18 @@ from fastapi import FastAPI
 import uvicorn
 import json
 import os
+import subprocess
+import time
+import webbrowser
+import platform
+import signal
+import psutil
 
 # ----------------------
 # CONFIG
 # ----------------------
 CONFIG_FILE = "config.json"
+FRONT_URL = "http://localhost:3000"
 
 # Configuration par défaut
 DEFAULT_CONFIG = {
@@ -25,6 +32,17 @@ DEFAULT_CONFIG = {
     "use_gpu": False,
     "force_mps": False  # Option pour forcer MPS sur Mac (peut causer des erreurs)
 }
+
+def kill_process_tree(proc):
+    """Tue un process et tous ses enfants"""
+    try:
+        parent = psutil.Process(proc.pid)
+        children = parent.children(recursive=True)
+        for child in children:
+            child.kill()
+        parent.kill()
+    except Exception as e:
+        print(f"❌ Erreur en tuant le process: {e}")
 
 def load_config():
     """Charge la configuration depuis le fichier JSON"""
@@ -454,6 +472,27 @@ async def main():
         print("Arrêt du serveur...")
 
 if __name__ == "__main__":
+    print("🚀 Lancement du front Next.js...")
+    next_process = subprocess.Popen(
+        ["npm", "run", "start"],
+        cwd="live-translation-front",
+        preexec_fn=os.setsid if platform.system() != "Windows" else None
+    )
+
+    def shutdown_handler(sig, frame):
+        print("\n🛑 Arrêt en cours... (backend + Next.js)")
+        kill_process_tree(next_process)
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, shutdown_handler)
+    signal.signal(signal.SIGTERM, shutdown_handler)
+
+    print("⏳ Attente du front (3s)...")
+    time.sleep(3)
+
+    print(f"🌍 Ouverture du navigateur sur {FRONT_URL}")
+    webbrowser.open(FRONT_URL)
+
     # Démarrer le serveur avec une configuration qui gère mieux les interruptions
     uvicorn.run(
         app_sio, 
