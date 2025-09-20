@@ -21,6 +21,7 @@ import psutil
 # ----------------------
 CONFIG_FILE = "config.json"
 FRONT_URL = "http://localhost:3000"
+FRONT_DIR = "live-translation-front"
 
 # Configuration par défaut
 DEFAULT_CONFIG = {
@@ -472,12 +473,22 @@ async def main():
         print("Arrêt du serveur...")
 
 if __name__ == "__main__":
+    # Lancer Next.js
     print("🚀 Lancement du front Next.js...")
-    next_process = subprocess.Popen(
-        ["npm", "run", "start"],
-        cwd="live-translation-front",
-        preexec_fn=os.setsid if platform.system() != "Windows" else None
-    )
+
+    if platform.system() == "Windows":
+        npm_cmd = "npm.cmd run start"
+        next_process = subprocess.Popen(
+            npm_cmd,
+            cwd=FRONT_DIR,
+            shell=True
+        )
+    else:
+        next_process = subprocess.Popen(
+            ["npm", "run", "start"],
+            cwd=FRONT_DIR,
+            preexec_fn=os.setsid
+        )
 
     def shutdown_handler(sig, frame):
         print("\n🛑 Arrêt en cours... (backend + Next.js)")
