@@ -1,0 +1,31 @@
+# Modèle Whisper officiel
+openai-whisper
+
+# Capture audio depuis micro
+sounddevice
+numpy
+
+# Serveur web et API
+fastapi
+uvicorn[standard]
+
+# Communication WebSocket / Socket.IO
+python-socketio[asyncio_server]
+
+# PyTorch (CPU par défaut) - requis pour Whisper
+torch
+
+# ===========================================
+# OPTIONS GPU (installer selon votre machine)
+# ===========================================
+
+# Pour CUDA (NVIDIA GPU sur Windows/Linux) :
+# pip uninstall torch
+# pip install torch==2.4.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+
+# Pour Metal (Apple Silicon Mac M1/M2/M3) :
+# pip uninstall torch
+# pip install torch torchvision torchaudio
+
+# Vérifier l'installation GPU :
+# python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}'); print(f'MPS: {torch.backends.mps.is_available() if hasattr(torch.backends, \"mps\") else False}')"
