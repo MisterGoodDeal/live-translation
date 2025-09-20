@@ -22,6 +22,7 @@ import {
   StopIcon,
   PlayIcon,
   FloppyDiskBackIcon,
+  GithubLogoIcon,
 } from "@phosphor-icons/react";
 import { SpeakerLowIcon } from "@phosphor-icons/react/dist/ssr";
 import { ThemeSwitch } from "../components/theme-switch";
@@ -456,8 +457,21 @@ export default function IndexPage() {
           </div>
           <div className="flex-1 p-4 flex flex-col gap-4">
             <div className="flex flex-row gap-4 justify-end">
+              <Button
+                isIconOnly
+                color="primary"
+                onPress={() => {
+                  window.open(
+                    "https://github.com/MisterGoodDeal/live-translation-webserver",
+                    "_blank"
+                  );
+                }}
+              >
+                <GithubLogoIcon size={24} weight="duotone" />
+              </Button>
               <ThemeSwitch />
             </div>
+
             <Textarea
               ref={textareaLogsRef}
               className="w-full"
