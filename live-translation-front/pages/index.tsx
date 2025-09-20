@@ -24,6 +24,7 @@ import {
   FloppyDiskBackIcon,
 } from "@phosphor-icons/react";
 import { SpeakerLowIcon } from "@phosphor-icons/react/dist/ssr";
+import { ThemeSwitch } from "../components/theme-switch";
 
 export default function IndexPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -454,6 +455,9 @@ export default function IndexPage() {
             </div>
           </div>
           <div className="flex-1 p-4 flex flex-col gap-4">
+            <div className="flex flex-row gap-4 justify-end">
+              <ThemeSwitch />
+            </div>
             <Textarea
               ref={textareaLogsRef}
               className="w-full"
