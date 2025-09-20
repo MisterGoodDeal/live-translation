@@ -26,6 +26,7 @@ import {
 import { SpeakerLowIcon } from "@phosphor-icons/react/dist/ssr";
 
 export default function IndexPage() {
+  const [isLoading, setIsLoading] = useState(true);
   const socket = useContext(SocketContext);
   const [logs, setLogs] = useState<string[]>([]);
   const [translation, setTranslation] = useState<string[]>([]);
@@ -37,8 +38,9 @@ export default function IndexPage() {
 
   const [microphones, setMicrophones] = useState<Microphone[]>([]);
   const [selectedMicrophone, setSelectedMicrophone] = useState<string>("");
-  const [selectedModelWhisper, setSelectedModelWhisper] =
-    useState<string>("small");
+  const [selectedModelWhisper, setSelectedModelWhisper] = useState<
+    string | null
+  >(null);
   const whipserModels = [
     {
       key: "small",
@@ -54,7 +56,8 @@ export default function IndexPage() {
     },
   ];
   useEffect(() => {
-    socket.emit("update_config", { model_name: selectedModelWhisper });
+    selectedModelWhisper &&
+      socket.emit("update_config", { model_name: selectedModelWhisper });
     addToast({
       title: "Modèle Whisper mis à jour !",
       description: `Pour prendre effet, veuillez redémarrer l'application !`,
@@ -63,13 +66,26 @@ export default function IndexPage() {
   }, [selectedModelWhisper]);
 
   const [config, setConfig] = useState({
-    model_name: selectedModelWhisper,
+    model_name: "small",
     sample_rate: 16000,
     chunk_duration: 2,
     volume_threshold: 0.01,
     selected_microphone_id: null,
     use_gpu: false,
   });
+
+  const saveConfigToLocalStorage = (newConfig: any) => {
+    if (typeof window !== "undefined" && localStorage) {
+      try {
+        localStorage.setItem(
+          "liveTranslationConfig",
+          JSON.stringify(newConfig)
+        );
+      } catch (error) {
+        console.error("Erreur lors de la sauvegarde de la config:", error);
+      }
+    }
+  };
 
   const scrollToBottom = () => {
     if (textareaLogsRef.current) {
@@ -84,6 +100,39 @@ export default function IndexPage() {
   useEffect(() => {
     scrollToBottom();
   }, [logs, translation]);
+
+  useEffect(() => {
+    const loadConfig = () => {
+      if (typeof window !== "undefined" && localStorage) {
+        const savedConfig = localStorage.getItem("liveTranslationConfig");
+        if (savedConfig) {
+          try {
+            const config = JSON.parse(savedConfig);
+            setSelectedModelWhisper(config.model_name || null);
+            setSelectedMicrophone(
+              config.selected_microphone_id
+                ? config.selected_microphone_id.toString()
+                : ""
+            );
+            setConfig(config);
+          } catch (error) {
+            console.error("Erreur lors du parsing de la config:", error);
+          }
+        }
+        setIsLoading(false);
+      } else {
+        // Si localStorage n'est pas encore disponible, réessayer dans 100ms
+        setTimeout(loadConfig, 100);
+      }
+    };
+
+    loadConfig();
+  }, []);
+
+  useEffect(() => {
+    console.log({ config });
+    setSelectedModelWhisper(config.model_name || null);
+  }, [config]);
 
   useEffect(() => {
     console.log({ socket });
@@ -125,6 +174,7 @@ export default function IndexPage() {
     });
 
     socket.on("connect", () => {
+      setSelectedModelWhisper(null);
       addToast({
         title: "Connecté au serveur !",
         color: "success",
@@ -153,6 +203,7 @@ export default function IndexPage() {
     socket.on("config", (data) => {
       console.log("Configuration reçue:", data);
       setConfig(data);
+      saveConfigToLocalStorage(data);
 
       if (data.selected_microphone_id !== null) {
         setSelectedMicrophone(data.selected_microphone_id.toString());
@@ -183,6 +234,18 @@ export default function IndexPage() {
   const handleDisconnect = () => {
     socket.disconnect();
   };
+
+  if (isLoading) {
+    return (
+      <DefaultLayout>
+        <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">
+          <div className="text-center">
+            <div className="text-lg">Chargement de la configuration...</div>
+          </div>
+        </section>
+      </DefaultLayout>
+    );
+  }
 
   return (
     <DefaultLayout>
@@ -256,6 +319,8 @@ export default function IndexPage() {
                 onSelectionChange={(keys) => {
                   const key = Array.from(keys)[0] as string;
                   setSelectedModelWhisper(key || "");
+                  const newConfig = { ...config, model_name: key || "" };
+                  saveConfigToLocalStorage(newConfig);
                 }}
               >
                 {whipserModels.map((model) => (
@@ -267,7 +332,9 @@ export default function IndexPage() {
                 isDisabled={!isConnected}
                 isSelected={config.use_gpu}
                 onValueChange={(checked) => {
-                  setConfig({ ...config, use_gpu: checked });
+                  const newConfig = { ...config, use_gpu: checked };
+                  setConfig(newConfig);
+                  saveConfigToLocalStorage(newConfig);
                   socket.emit("update_config", { use_gpu: checked });
                   addToast({
                     title: "Utilisation GPU mise à jour !",
@@ -292,6 +359,11 @@ export default function IndexPage() {
                   onSelectionChange={(keys) => {
                     const key = Array.from(keys)[0] as string;
                     setSelectedMicrophone(key || "");
+                    const newConfig = {
+                      ...config,
+                      selected_microphone_id: key ? parseInt(key) : null,
+                    };
+                    saveConfigToLocalStorage(newConfig);
                   }}
                 >
                   {microphones.map((microphone) => (
@@ -327,7 +399,9 @@ export default function IndexPage() {
                 step={100}
                 value={config.sample_rate}
                 onChange={(value: any) => {
-                  setConfig({ ...config, sample_rate: value });
+                  const newConfig = { ...config, sample_rate: value };
+                  setConfig(newConfig);
+                  saveConfigToLocalStorage(newConfig);
                 }}
                 onChangeEnd={(value: any) => {
                   socket.emit("update_config", { sample_rate: value });
@@ -350,7 +424,9 @@ export default function IndexPage() {
                 step={0.1}
                 value={config.chunk_duration}
                 onChange={(value: any) => {
-                  setConfig({ ...config, chunk_duration: value });
+                  const newConfig = { ...config, chunk_duration: value };
+                  setConfig(newConfig);
+                  saveConfigToLocalStorage(newConfig);
                 }}
                 onChangeEnd={(value: any) => {
                   socket.emit("update_config", { chunk_duration: value });
@@ -367,7 +443,9 @@ export default function IndexPage() {
                 step={0.01}
                 value={config.volume_threshold}
                 onChange={(value: any) => {
-                  setConfig({ ...config, volume_threshold: value });
+                  const newConfig = { ...config, volume_threshold: value };
+                  setConfig(newConfig);
+                  saveConfigToLocalStorage(newConfig);
                 }}
                 onChangeEnd={(value: any) => {
                   socket.emit("update_config", { volume_threshold: value });
