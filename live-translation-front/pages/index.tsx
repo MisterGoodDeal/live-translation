@@ -68,7 +68,7 @@ export default function IndexPage() {
   }, [selectedModelWhisper]);
 
   const [selectedSpokenLanguage, setSelectedSpokenLanguage] =
-    useState<string>("fr");
+    useState<string>("en");
   useEffect(() => {
     selectedSpokenLanguage &&
       socket.emit("update_config", { spoken_language: selectedSpokenLanguage });
@@ -88,7 +88,18 @@ export default function IndexPage() {
       label: "🇬🇧 Anglais",
     },
   ];
-
+  const [selectedTargetLanguage, setSelectedTargetLanguage] =
+    useState<string>("fr");
+  const targetLanguages = [
+    {
+      key: "fr",
+      label: "🇫🇷 Français",
+    },
+    {
+      key: "en",
+      label: "🇬🇧 Anglais",
+    },
+  ];
   const [config, setConfig] = useState({
     model_name: "small",
     sample_rate: 16000,
@@ -96,7 +107,8 @@ export default function IndexPage() {
     volume_threshold: 0.01,
     selected_microphone_id: null,
     use_gpu: false,
-    spoken_language: "fr",
+    spoken_language: "en",
+    target_language: "fr",
   });
 
   const saveConfigToLocalStorage = (newConfig: any) => {
@@ -139,7 +151,8 @@ export default function IndexPage() {
                 ? config.selected_microphone_id.toString()
                 : ""
             );
-            setSelectedSpokenLanguage(config.spoken_language || "fr");
+            setSelectedSpokenLanguage(config.spoken_language || "en");
+            setSelectedTargetLanguage(config.target_language || "fr");
             setConfig(config);
           } catch (error) {
             console.error("Erreur lors du parsing de la config:", error);
@@ -158,7 +171,8 @@ export default function IndexPage() {
   useEffect(() => {
     console.log({ config });
     setSelectedModelWhisper(config.model_name || null);
-    setSelectedSpokenLanguage(config.spoken_language || "fr");
+    setSelectedSpokenLanguage(config.spoken_language || "en");
+    setSelectedTargetLanguage(config.target_language || "fr");
   }, [config]);
 
   useEffect(() => {
@@ -331,30 +345,31 @@ export default function IndexPage() {
                   {translationStarted ? "Arrêter" : "Démarrer"}
                 </Button>
               </div>
+
+              <Select
+                size="sm"
+                isDisabled={!isConnected}
+                label="Modèle Whisper"
+                isClearable={false}
+                placeholder="Sélectionner un modèle Whisper"
+                description={
+                  "Modèle Whisper utilisé pour la traduction en direct"
+                }
+                selectedKeys={
+                  selectedModelWhisper ? [selectedModelWhisper] : []
+                }
+                onSelectionChange={(keys) => {
+                  const key = Array.from(keys)[0] as string;
+                  setSelectedModelWhisper(key || "");
+                  const newConfig = { ...config, model_name: key || "" };
+                  saveConfigToLocalStorage(newConfig);
+                }}
+              >
+                {whipserModels.map((model) => (
+                  <SelectItem key={model.key}>{model.label}</SelectItem>
+                ))}
+              </Select>
               <div className="flex flex-row gap-4">
-                <Select
-                  size="sm"
-                  isDisabled={!isConnected}
-                  label="Modèle Whisper"
-                  isClearable={false}
-                  placeholder="Sélectionner un modèle Whisper"
-                  description={
-                    "Modèle Whisper utilisé pour la traduction en direct"
-                  }
-                  selectedKeys={
-                    selectedModelWhisper ? [selectedModelWhisper] : []
-                  }
-                  onSelectionChange={(keys) => {
-                    const key = Array.from(keys)[0] as string;
-                    setSelectedModelWhisper(key || "");
-                    const newConfig = { ...config, model_name: key || "" };
-                    saveConfigToLocalStorage(newConfig);
-                  }}
-                >
-                  {whipserModels.map((model) => (
-                    <SelectItem key={model.key}>{model.label}</SelectItem>
-                  ))}
-                </Select>
                 <Select
                   size="sm"
                   isDisabled={!isConnected}
@@ -368,11 +383,38 @@ export default function IndexPage() {
                   onSelectionChange={(keys) => {
                     const key = Array.from(keys)[0] as string;
                     setSelectedSpokenLanguage(key || "");
-                    const newConfig = { ...config, spoken_language: key || "" };
+                    const newConfig = {
+                      ...config,
+                      spoken_language: key || "en",
+                    };
                     saveConfigToLocalStorage(newConfig);
                   }}
                 >
                   {spokenLanguages.map((language) => (
+                    <SelectItem key={language.key}>{language.label}</SelectItem>
+                  ))}
+                </Select>
+                <Select
+                  size="sm"
+                  isDisabled={!isConnected}
+                  label="Langue cible"
+                  isClearable={false}
+                  placeholder="Sélectionner une langue"
+                  description={"Langue cible lors de la traduction en direct"}
+                  selectedKeys={
+                    selectedTargetLanguage ? [selectedTargetLanguage] : []
+                  }
+                  onSelectionChange={(keys) => {
+                    const key = Array.from(keys)[0] as string;
+                    setSelectedTargetLanguage(key || "");
+                    const newConfig = {
+                      ...config,
+                      target_language: key || "fr",
+                    };
+                    saveConfigToLocalStorage(newConfig);
+                  }}
+                >
+                  {targetLanguages.map((language) => (
                     <SelectItem key={language.key}>{language.label}</SelectItem>
                   ))}
                 </Select>

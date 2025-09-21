@@ -1,3 +1,4 @@
+# full script with M2M100 integration
 import whisper
 import sounddevice as sd
 import numpy as np
@@ -15,6 +16,7 @@ import webbrowser
 import platform
 import signal
 import psutil
+from pathlib import Path
 
 # ----------------------
 # CONFIG
@@ -32,7 +34,8 @@ DEFAULT_CONFIG = {
     "selected_microphone_id": None,
     "use_gpu": False,
     "force_mps": False,  # Option pour forcer MPS sur Mac (peut causer des erreurs)
-    "spoken_language": "fr"
+    "spoken_language": "en",   # langue parlée (ex: "en")
+    "target_language": "fr"    # langue cible de traduction (ex: "fr")
 }
 
 def kill_process_tree(proc):
@@ -71,14 +74,15 @@ def save_config(config):
 
 # Charger la configuration
 config = load_config()
-MODEL_NAME = config["model_name"]
-SAMPLE_RATE = config["sample_rate"]
-CHUNK_DURATION = config["chunk_duration"]
-VOLUME_THRESHOLD = config["volume_threshold"]
-SELECTED_MICROPHONE_ID = config["selected_microphone_id"]
-USE_GPU = config["use_gpu"]
-FORCE_MPS = config.get("force_mps", False)
-SPOKEN_LANGUAGE = config["spoken_language"]
+MODEL_NAME = config.get("model_name", DEFAULT_CONFIG["model_name"])
+SAMPLE_RATE = config.get("sample_rate", DEFAULT_CONFIG["sample_rate"])
+CHUNK_DURATION = config.get("chunk_duration", DEFAULT_CONFIG["chunk_duration"])
+VOLUME_THRESHOLD = config.get("volume_threshold", DEFAULT_CONFIG["volume_threshold"])
+SELECTED_MICROPHONE_ID = config.get("selected_microphone_id", DEFAULT_CONFIG["selected_microphone_id"])
+USE_GPU = config.get("use_gpu", DEFAULT_CONFIG["use_gpu"])
+FORCE_MPS = config.get("force_mps", DEFAULT_CONFIG["force_mps"])
+SPOKEN_LANGUAGE = config.get("spoken_language", DEFAULT_CONFIG["spoken_language"])
+TARGET_LANGUAGE = config.get("target_language", DEFAULT_CONFIG["target_language"])
 
 # État de la transcription
 TRANSCRIPTION_ACTIVE = False
@@ -98,8 +102,6 @@ def detect_gpu_device():
                 print("⚠️ MPS forcé (peut causer des erreurs avec Whisper)")
                 return "mps"
             else:
-                # MPS a des problèmes de compatibilité avec Whisper
-                # On force le CPU pour Mac pour éviter les erreurs
                 print("⚠️ MPS détecté mais désactivé pour Whisper (problèmes de compatibilité)")
                 return "cpu"
         else:
@@ -108,7 +110,7 @@ def detect_gpu_device():
         return "cpu"
 
 # ----------------------
-# INIT Whisper
+# INIT Whisper (unchanged)
 # ----------------------
 print(f"Loading Whisper model '{MODEL_NAME}'...")
 
@@ -120,33 +122,57 @@ if gpu_device == "cuda":
         import torch
         print(f"   - Nom: {torch.cuda.get_device_name(0)}")
         print(f"   - Mémoire: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
-    except:
+    except Exception:
         pass
 elif gpu_device == "mps":
     print("   - Metal Performance Shaders (Mac)")
 
+# Charger Whisper sur gpu_device si use_gpu True
 if USE_GPU:
-    print(f"🎮 Configuration GPU: {'Activé' if USE_GPU else 'Désactivé'}")
-    
     if gpu_device != "cpu":
-        print(f"🎮 Tentative de chargement avec accélération {gpu_device.upper()}...")
         try:
             model = whisper.load_model(MODEL_NAME, device=gpu_device)
-            print(f"✅ Modèle chargé avec succès sur {gpu_device.upper()}")
+            print(f"✅ Whisper loaded on {gpu_device}")
         except Exception as e:
-            print(f"⚠️ Impossible de charger sur {gpu_device.upper()}: {e}")
-            print("🔄 Fallback vers CPU...")
+            print(f"⚠️ Impossible de charger Whisper sur {gpu_device}: {e}\nFallback to CPU")
             model = whisper.load_model(MODEL_NAME, device="cpu")
-            print("✅ Modèle chargé sur CPU")
     else:
-        print("⚠️ Aucun GPU détecté, utilisation du CPU")
+        print("⚠️ Aucun GPU détecté, utilisation du CPU pour Whisper")
         model = whisper.load_model(MODEL_NAME, device="cpu")
-        print("💻 Modèle chargé sur CPU")
 else:
     model = whisper.load_model(MODEL_NAME, device="cpu")
-    print("💻 Modèle chargé sur CPU")
+    print("💻 Whisper loaded on CPU")
 
 audio_queue = queue.Queue()
+
+# ----------------------
+# M2M100 translator (HuggingFace) initialization
+# ----------------------
+translator_enabled = False
+translator_device = "cpu"
+translator_model_name = "facebook/m2m100_418M"  # choix raisonnable
+
+try:
+    from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
+    import torch as _torch
+    # choose device for translator
+    if _torch.cuda.is_available():
+        translator_device = "cuda"
+    else:
+        translator_device = "cpu"
+    print(f"🔍 Translator device: {translator_device}")
+
+    print(f"📥 Loading translator model '{translator_model_name}' (this may take time)...")
+    translator_tokenizer = M2M100Tokenizer.from_pretrained(translator_model_name)
+    translator_model = M2M100ForConditionalGeneration.from_pretrained(translator_model_name)
+    translator_model.to(translator_device)
+    translator_enabled = True
+    print("✅ Translator model loaded")
+except Exception as e:
+    translator_enabled = False
+    print(f"⚠️ Translator not available: {e}")
+    print("   -> Install transformers & sentencepiece and ensure CUDA-compatible torch if you want GPU translation.")
+    # keep going without translator
 
 # ----------------------
 # SOCKET.IO
@@ -202,6 +228,24 @@ def get_available_microphones():
         return []
 
 # ----------------------
+# Translator helper (blocking) - run in executor
+# ----------------------
+def translate_sync(text: str, src_lang: str, tgt_lang: str) -> str:
+    """Blocant: traduit text src->tgt avec M2M100"""
+    if not translator_enabled:
+        return "[TRANSLATOR NOT AVAILABLE]"
+    # tokenizer expects language codes like "en", "fr"
+    try:
+        translator_tokenizer.src_lang = src_lang
+        encoded = translator_tokenizer(text, return_tensors="pt", truncation=True, max_length=1024).to(translator_device)
+        forced_id = translator_tokenizer.get_lang_id(tgt_lang)
+        generated_tokens = translator_model.generate(**encoded, forced_bos_token_id=forced_id, max_length=512)
+        out = translator_tokenizer.decode(generated_tokens[0], skip_special_tokens=True)
+        return out
+    except Exception as e:
+        return f"[TRANSLATION ERROR: {e}]"
+
+# ----------------------
 # Loop audio principale
 # ----------------------
 async def audio_loop():
@@ -252,19 +296,47 @@ async def audio_loop():
 
                     # Traiter seulement si la transcription est active
                     if TRANSCRIPTION_ACTIVE:
-                        await send_log("⏳ Processing chunk...")
-                        result = model.transcribe(
-                            audio_data,
-                            task="translate",
-                            language=SPOKEN_LANGUAGE,
-                            fp16=False
-                        )
+                        await send_log("⏳ Processing chunk (transcription)...")
 
-                        translated_text = result["text"].strip()
-                        if translated_text:  # Envoyer seulement si il y a du texte
-                            await send_log(f"💬 Traduction: {translated_text}")
-                            # envoyer la traduction à tous les clients
-                            await sio.emit('translation', {'text': translated_text})
+                        # 1) Transcrire (Whisper) — on transcrit dans la langue parlée (ex: "en")
+                        try:
+                            # task="transcribe" so whisper returns text in source language
+                            result = model.transcribe(
+                                audio_data,
+                                task="transcribe",
+                                language=SPOKEN_LANGUAGE,
+                                fp16=False
+                            )
+                            source_text = result.get("text", "").strip()
+                        except Exception as e:
+                            await send_log(f"❌ Whisper transcription error: {e}")
+                            source_text = ""
+
+                        if source_text:
+                            await send_log(f"📝 Transcription ({SPOKEN_LANGUAGE}): {source_text}")
+
+                            # 2) Traduire localement via M2M100 (si activé)
+                            if translator_enabled:
+                                await send_log("🔁 Traduction via M2M100 en cours...")
+                                loop = asyncio.get_running_loop()
+                                try:
+                                    translated_text = await loop.run_in_executor(
+                                        None,
+                                        translate_sync,
+                                        source_text,
+                                        SPOKEN_LANGUAGE,
+                                        TARGET_LANGUAGE
+                                    )
+                                    await send_log(f"💬 Traduction ({TARGET_LANGUAGE}): {translated_text}")
+                                    await sio.emit('translation', {'text': translated_text})
+                                except Exception as e:
+                                    await send_log(f"❌ Erreur traduction: {e}")
+                            else:
+                                # si pas de trad local, on peut renvoyer la transcription (ou la marquer)
+                                await send_log("⚠️ Traduction locale non disponible — envoi de la transcription brute")
+                                await sio.emit('translation', {'text': source_text})
+                        else:
+                            await send_log("⚠️ Pas de texte extrait par Whisper pour ce chunk")
 
                     buffer = np.zeros((0, 1), dtype=np.float32)
     except asyncio.CancelledError:
@@ -286,12 +358,14 @@ async def connect(sid, environ):
     
     # Envoyer la configuration actuelle au client
     await sio.emit('config', {
-        'model_name': config['model_name'],
-        'sample_rate': config['sample_rate'],
-        'chunk_duration': config['chunk_duration'],
-        'volume_threshold': config['volume_threshold'],
-        'selected_microphone_id': config['selected_microphone_id'],
-        'use_gpu': config['use_gpu']
+        'model_name': config.get('model_name'),
+        'sample_rate': config.get('sample_rate'),
+        'chunk_duration': config.get('chunk_duration'),
+        'volume_threshold': config.get('volume_threshold'),
+        'selected_microphone_id': config.get('selected_microphone_id'),
+        'use_gpu': config.get('use_gpu'),
+        'spoken_language': config.get('spoken_language'),
+        'target_language': config.get('target_language')
     }, room=sid)
 
 @sio.event
@@ -351,7 +425,7 @@ async def set_microphone(sid, data):
 @sio.event
 async def update_config(sid, data):
     """Met à jour la configuration"""
-    global config, VOLUME_THRESHOLD, CHUNK_DURATION
+    global config, VOLUME_THRESHOLD, CHUNK_DURATION, SPOKEN_LANGUAGE, TARGET_LANGUAGE, SAMPLE_RATE, MODEL_NAME, USE_GPU
     
     updated = False
     
@@ -376,7 +450,7 @@ async def update_config(sid, data):
     if 'model_name' in data:
         config["model_name"] = data['model_name']
         MODEL_NAME = config["model_name"]
-        await send_log(f"🔊 Modèle Whisper mise à jour: {MODEL_NAME}")
+        await send_log(f"🔊 Modèle Whisper mis à jour: {MODEL_NAME}")
         updated = True
 
     if 'use_gpu' in data:
@@ -391,6 +465,12 @@ async def update_config(sid, data):
         SPOKEN_LANGUAGE = config["spoken_language"]
         await send_log(f"🔊 Langue parlée mise à jour: {SPOKEN_LANGUAGE}")
         updated = True
+
+    if 'target_language' in data:
+        config["target_language"] = data['target_language']
+        TARGET_LANGUAGE = config["target_language"]
+        await send_log(f"🔊 Langue cible mise à jour: {TARGET_LANGUAGE}")
+        updated = True
     
     if updated:
         save_config(config)
@@ -400,12 +480,14 @@ async def update_config(sid, data):
 async def get_config(sid):
     """Récupère la configuration actuelle"""
     await sio.emit('config', {
-        'model_name': config["model_name"],
-        'sample_rate': config["sample_rate"],
-        'chunk_duration': config["chunk_duration"],
-        'volume_threshold': config["volume_threshold"],
-        'selected_microphone_id': config["selected_microphone_id"],
-        'use_gpu': config["use_gpu"]
+        'model_name': config.get("model_name"),
+        'sample_rate': config.get("sample_rate"),
+        'chunk_duration': config.get("chunk_duration"),
+        'volume_threshold': config.get("volume_threshold"),
+        'selected_microphone_id': config.get("selected_microphone_id"),
+        'use_gpu': config.get("use_gpu"),
+        'spoken_language': config.get("spoken_language"),
+        'target_language': config.get("target_language")
     }, room=sid)
 
 @sio.event
