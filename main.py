@@ -158,18 +158,17 @@ except Exception as e:
     print(f"⚠️ Translator not available: {e}")
     translator_enabled = False
 
-def translate_sync(text: str, src_lang: str, tgt_lang: str) -> str:
-    """Blocant: traduit text src->tgt avec M2M100"""
+def translate_sync(text: str) -> str:
+    """Traduction blocante avec MarianMT"""
     if not translator_enabled:
         return "[TRANSLATOR NOT AVAILABLE]"
     try:
-        translator_tokenizer.src_lang = src_lang
-        encoded = translator_tokenizer(text, return_tensors="pt", truncation=True, max_length=1024).to(translator_device)
-        forced_id = translator_tokenizer.get_lang_id(tgt_lang)
-        generated_tokens = translator_model.generate(**encoded, forced_bos_token_id=forced_id, max_length=512)
-        return translator_tokenizer.decode(generated_tokens[0], skip_special_tokens=True)
+        inputs = translator_tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(translator_device)
+        translated_tokens = translator_model.generate(**inputs, max_length=512)
+        return translator_tokenizer.decode(translated_tokens[0], skip_special_tokens=True)
     except Exception as e:
         return f"[TRANSLATION ERROR: {e}]"
+
 
 # ----------------------
 # SOCKET.IO
@@ -266,7 +265,7 @@ async def audio_loop():
                             if translator_enabled:
                                 await send_log("🔁 Traduction via M2M100 en cours...")
                                 loop = asyncio.get_running_loop()
-                                translated_text = await loop.run_in_executor(None, translate_sync, source_text, SPOKEN_LANGUAGE, TARGET_LANGUAGE)
+                                translated_text = await loop.run_in_executor(None, translate_sync, source_text)
                                 await send_log(f"💬 Original ({SPOKEN_LANGUAGE}): {source_text}")
                                 await send_log(f"💬 Traduction ({TARGET_LANGUAGE}): {translated_text}")
                                 await sio.emit('translation', {'text': translated_text})
