@@ -25,7 +25,6 @@ CONFIG_FILE = "config.json"
 FRONT_URL = "http://localhost:3000"
 FRONT_DIR = "live-translation-front"
 
-# Configuration par défaut
 DEFAULT_CONFIG = {
     "model_name": "small",
     "sample_rate": 16000,
@@ -39,7 +38,6 @@ DEFAULT_CONFIG = {
 }
 
 def kill_process_tree(proc):
-    """Tue un process et tous ses enfants"""
     try:
         parent = psutil.Process(proc.pid)
         children = parent.children(recursive=True)
@@ -50,7 +48,6 @@ def kill_process_tree(proc):
         print(f"❌ Erreur en tuant le process: {e}")
 
 def load_config():
-    """Charge la configuration depuis le fichier JSON et merge avec DEFAULT_CONFIG"""
     config = DEFAULT_CONFIG.copy()
     if os.path.exists(CONFIG_FILE):
         try:
@@ -65,7 +62,6 @@ def load_config():
     return config
 
 def save_config(config):
-    """Sauvegarde la configuration dans le fichier JSON"""
     try:
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=2, ensure_ascii=False)
@@ -73,7 +69,7 @@ def save_config(config):
     except Exception as e:
         print(f"❌ Erreur lors de la sauvegarde: {e}")
 
-# Charger la configuration
+# Charger la config
 config = load_config()
 MODEL_NAME = config.get("model_name")
 SAMPLE_RATE = config.get("sample_rate")
@@ -85,18 +81,16 @@ FORCE_MPS = config.get("force_mps")
 SPOKEN_LANGUAGE = config.get("spoken_language")
 TARGET_LANGUAGE = config.get("target_language")
 
-# État de la transcription
+# État
 TRANSCRIPTION_ACTIVE = False
 AUDIO_LOOP_RUNNING = False
-audio_task = None  # initialisation sécurisée
-
+audio_task = None
 audio_queue = queue.Queue()
 
 # ----------------------
 # Détection GPU
 # ----------------------
 def detect_gpu_device():
-    """Détecte le type de GPU disponible"""
     try:
         import torch
         if torch.cuda.is_available():
@@ -142,7 +136,7 @@ else:
     print("💻 Whisper loaded on CPU")
 
 # ----------------------
-# MarianMT / M2M100 translator
+# MarianMT translator
 # ----------------------
 translator_enabled = False
 translator_device = "cuda" if gpu_device == "cuda" else "cpu"
@@ -159,7 +153,6 @@ except Exception as e:
     translator_enabled = False
 
 def translate_sync(text: str) -> str:
-    """Traduction blocante avec MarianMT"""
     if not translator_enabled:
         return "[TRANSLATOR NOT AVAILABLE]"
     try:
@@ -169,7 +162,6 @@ def translate_sync(text: str) -> str:
     except Exception as e:
         return f"[TRANSLATION ERROR: {e}]"
 
-
 # ----------------------
 # SOCKET.IO
 # ----------------------
@@ -178,11 +170,17 @@ app = FastAPI()
 app_sio = socketio.ASGIApp(sio, app)
 
 # ----------------------
+# Event loop global pour callback
+# ----------------------
+MAIN_LOOP = asyncio.get_event_loop()
+
+# ----------------------
 # Fonctions utilitaires
 # ----------------------
 def callback(indata, frames, time, status):
     if status:
-        asyncio.create_task(send_log(f"⚠️ Audio status: {status}"))
+        # ✅ Planifier la coroutine dans l'event loop principal
+        asyncio.run_coroutine_threadsafe(send_log(f"⚠️ Audio status: {status}"), MAIN_LOOP)
     audio_queue.put(indata.copy())
 
 def validate_microphone_id(mic_id):
@@ -218,13 +216,11 @@ async def audio_loop():
     global TRANSCRIPTION_ACTIVE, AUDIO_LOOP_RUNNING
     buffer = np.zeros((0, 1), dtype=np.float32)
     AUDIO_LOOP_RUNNING = True
-    
     print("🎙️ Boucle audio démarrée, en attente du microphone...")
     try:
         while SELECTED_MICROPHONE_ID is None:
             await asyncio.sleep(1)
         print(f"🎙️ Utilisation du microphone ID {SELECTED_MICROPHONE_ID}")
-        
         with sd.InputStream(
             samplerate=SAMPLE_RATE,
             channels=1,
@@ -233,24 +229,19 @@ async def audio_loop():
         ):
             print("🎙️ Micro OK ! Prêt à traduire...")
             while True:
-                try:
-                    data = audio_queue.get(timeout=0.1)
+                try: data = audio_queue.get(timeout=0.1)
                 except queue.Empty:
                     await asyncio.sleep(0.01)
                     continue
-
                 buffer = np.concatenate([buffer, data])
                 duration = len(buffer) / SAMPLE_RATE
-                rms = np.sqrt(np.mean(np.square(buffer.flatten())))
-
                 if duration >= CHUNK_DURATION:
                     audio_data = buffer.flatten()
                     if not has_speech(audio_data):
                         if TRANSCRIPTION_ACTIVE:
                             await send_log("🔇 Silence détecté, chunk ignoré")
-                        buffer = np.zeros((0, 1), dtype=np.float32)
+                        buffer = np.zeros((0,1), dtype=np.float32)
                         continue
-
                     if TRANSCRIPTION_ACTIVE:
                         await send_log("⏳ Processing chunk (transcription)...")
                         try:
@@ -259,7 +250,6 @@ async def audio_loop():
                         except Exception as e:
                             await send_log(f"❌ Whisper transcription error: {e}")
                             source_text = ""
-
                         if source_text:
                             await send_log(f"📝 Transcription ({SPOKEN_LANGUAGE}): {source_text}")
                             if translator_enabled:
@@ -274,7 +264,7 @@ async def audio_loop():
                                 await sio.emit('translation', {'text': source_text})
                         else:
                             await send_log("⚠️ Pas de texte extrait par Whisper pour ce chunk")
-                    buffer = np.zeros((0, 1), dtype=np.float32)
+                    buffer = np.zeros((0,1), dtype=np.float32)
     except asyncio.CancelledError:
         print("🎙️ Boucle audio annulée")
         raise
@@ -285,7 +275,7 @@ async def audio_loop():
         AUDIO_LOOP_RUNNING = False
 
 # ----------------------
-# SOCKET.IO EVENTS
+# SOCKET.IO EVENTS (inchangés)
 # ----------------------
 @sio.event
 async def connect(sid, environ):
