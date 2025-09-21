@@ -150,7 +150,7 @@ audio_queue = queue.Queue()
 # ----------------------
 translator_enabled = False
 translator_device = "cpu"
-translator_model_name = "facebook/m2m100_418M"  # choix raisonnable
+translator_model_name = "Helsinki-NLP/opus-mt-en-fr"  # choix raisonnable
 
 try:
     from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
