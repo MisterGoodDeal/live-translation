@@ -283,7 +283,6 @@ async def audio_loop():
                 
                 # Afficher les logs seulement si la transcription est active et qu'il y a de l'activité
                 if TRANSCRIPTION_ACTIVE and rms > VOLUME_THRESHOLD:
-                    await send_log(f"Buffer: {duration:.2f}s | RMS: {rms:.4f}")
 
                 if duration >= CHUNK_DURATION:
                     audio_data = buffer.flatten()
@@ -327,6 +326,7 @@ async def audio_loop():
                                         SPOKEN_LANGUAGE,
                                         TARGET_LANGUAGE
                                     )
+                                    await send_log(f"💬 Original ({SPOKEN_LANGUAGE}): {source_text}")
                                     await send_log(f"💬 Traduction ({TARGET_LANGUAGE}): {translated_text}")
                                     await sio.emit('translation', {'text': translated_text})
                                 except Exception as e:
