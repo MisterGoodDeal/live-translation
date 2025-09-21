@@ -34,3 +34,4 @@ psutil
 transformers 
 sentencepiece
 protobuf
+sacremoses
