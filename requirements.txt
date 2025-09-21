@@ -33,3 +33,4 @@ psutil
 # python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}'); print(f'MPS: {torch.backends.mps.is_available() if hasattr(torch.backends, \"mps\") else False}')"
 transformers 
 sentencepiece
+protobuf
