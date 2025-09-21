@@ -280,9 +280,6 @@ async def audio_loop():
                 buffer = np.concatenate([buffer, data])
                 duration = len(buffer) / SAMPLE_RATE
                 rms = np.sqrt(np.mean(np.square(buffer.flatten())))
-                
-                # Afficher les logs seulement si la transcription est active et qu'il y a de l'activité
-                if TRANSCRIPTION_ACTIVE and rms > VOLUME_THRESHOLD:
 
                 if duration >= CHUNK_DURATION:
                     audio_data = buffer.flatten()
