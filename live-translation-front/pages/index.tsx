@@ -489,7 +489,7 @@ export default function IndexPage() {
                 endContent={<SpeakerHighIcon size={24} weight="fill" />}
                 label="Seuil d'écoute du microphone"
                 maxValue={0.5}
-                minValue={0.01}
+                minValue={0.0}
                 step={0.01}
                 value={config.volume_threshold}
                 onChange={(value: any) => {
