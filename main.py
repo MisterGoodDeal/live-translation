@@ -31,7 +31,8 @@ DEFAULT_CONFIG = {
     "volume_threshold": 0.01,
     "selected_microphone_id": None,
     "use_gpu": False,
-    "force_mps": False  # Option pour forcer MPS sur Mac (peut causer des erreurs)
+    "force_mps": False,  # Option pour forcer MPS sur Mac (peut causer des erreurs)
+    "spoken_language": "fr"
 }
 
 def kill_process_tree(proc):
@@ -77,6 +78,7 @@ VOLUME_THRESHOLD = config["volume_threshold"]
 SELECTED_MICROPHONE_ID = config["selected_microphone_id"]
 USE_GPU = config["use_gpu"]
 FORCE_MPS = config.get("force_mps", False)
+SPOKEN_LANGUAGE = config["spoken_language"]
 
 # État de la transcription
 TRANSCRIPTION_ACTIVE = False
@@ -254,7 +256,7 @@ async def audio_loop():
                         result = model.transcribe(
                             audio_data,
                             task="translate",
-                            language="fr",
+                            language=SPOKEN_LANGUAGE,
                             fp16=False
                         )
 
@@ -382,6 +384,12 @@ async def update_config(sid, data):
         USE_GPU = config["use_gpu"]
         await send_log(f"🎮 Utilisation GPU mise à jour: {'Activé' if USE_GPU else 'Désactivé'}")
         await send_log("⚠️ Redémarrez l'application pour que les changements GPU prennent effet")
+        updated = True
+    
+    if 'spoken_language' in data:
+        config["spoken_language"] = data['spoken_language']
+        SPOKEN_LANGUAGE = config["spoken_language"]
+        await send_log(f"🔊 Langue parlée mise à jour: {SPOKEN_LANGUAGE}")
         updated = True
     
     if updated:
